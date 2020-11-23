@@ -31,7 +31,7 @@ def listHostInterfaces():
 # We sniff a certain amount of packet before stopping
 def sniff_packets(interface, count, filter):
     print("Sniffing", count, "packets on interface", interface,"...\n")
-    packets = sniff(iface=interface, count=count, filter=filter)
+    packets = sniff(iface=interface, count=count, filter=filter, monitor=True)
 
     #Print out the summary of all the packets sniffed, and return them
     packets.nsummary()
@@ -41,7 +41,7 @@ def sniff_packets(interface, count, filter):
 # We wait for user input before stopping packet sniffing
 def persistent_packet_sniffing(interface, filter):
     print("Sniffing packets on interface", interface,", press any key to stop...\n")
-    packets = sniff(iface=interface, filter=filter)
+    packets = sniff(iface=interface, filter=filter, monitor=True)
 
     # Print out the summary of all the packets sniffed, and return them
     packets.nsummary()
@@ -59,9 +59,12 @@ def resultOutput(packets):
         for i in range(len(packets)):
             f.write("\n\n\n PACKET #" + str(i) + "\n\n")
             #f.write(packets[i].show(dump=True))
-            f.write("Source MAC Address : " + str(packets[i].getlayer('Ethernet').src) + "\n")
-            f.write("TCP Sequence Number : " + str(packets[i].getlayer('TCP').seq)+ "\n")
-            #f.write("Source MAC Address : " + packets[i].src)
+            if packets[i].getlayer('Ethernet') is not None:
+                f.write("Source MAC Address : " + str(packets[i].getlayer('Ethernet').src) + "\n")
+            if packets[i].getlayer('TCP') is not None:
+                f.write("TCP Sequence Number : " + str(packets[i].getlayer('TCP').seq)+ "\n")
+            if packets[i].getlayer('Radiotap') is not None:
+                f.write("Signal Strength (Antenna Signal in dBm): " + str(packets[i].getlayer('Radiotap').dBm_AntSignal)+ "\n")
     
     print("Sniffed packets are available in packetSniffingResults.txt")
 
