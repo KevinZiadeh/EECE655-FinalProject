@@ -2,16 +2,16 @@ import json
 from matplotlib import pyplot as plt
 from scapy.all import *
 
-'''
-Used wireshark with NIC in monitor mode to get pcapng file. Used wireshark extract as json to get json file
-'''
+import jsonPacket as jsP
+import pcapPacket as pcapP
 
-# sequence number can appear in two places depending on the type of packet
-def getSequenceNumber(wlan):
-    if "wlan.seq" in wlan:
-        return wlan["wlan.seq"]
-    elif "Compressed BlockAck Response" in wlan:
-        return wlan["Compressed BlockAck Response"]["wlan.fixed.ssc_tree"]["wlan.fixed.ssc.sequence"]
+'''
+Used wireshark with NIC in monitor mode to get pcapng file. Make sure decryption of IEEE 802.11 is enabled and working
+Used wireshark extract as json to get json file
+
+JSON file size is way bigger than pcap
+PCAP execution time is way greater
+'''
 
 # calculate the gap between two consecutive sequence numbers
 def calculateGap(seqList):
@@ -36,41 +36,13 @@ def calculatePercentages(seqList):
             seqDict.pop(key)
         else:
             seqDict[key] = seqDict[key]/len(seqList)
-
     PerList = sorted(seqDict.items()) # sort by key
-
     return PerList
-
-# extract from packets that contain a sequence number the clients as well as the sequence number
-def getClients(jsonfile):
-    clients = {}
-    for packet in jsonfile:
-        wlan = packet["_source"]["layers"]
-        if "wlan.sa" in wlan["wlan"]:
-            source = wlan["wlan"]["wlan.sa"]
-            if source in clients:
-                clients[source]["seqNum"].append(int(getSequenceNumber(wlan["wlan"])))
-                if "wlan_radio" in wlan and "wlan_radio.signal_dbm" in wlan["wlan_radio"]:
-                    clients[source]["sigStr"].append(int(wlan["wlan_radio"]["wlan_radio.signal_dbm"]))
-            else:
-                clients[source] = {}
-                clients[source]["seqNum"] = []
-                clients[source]["sigStr"] = []
-
-    # filter clients to get only ones with enough packets to matter
-    for key in clients:
-        if len(clients[key]["seqNum"])>50:
-            clients[key]["seqGap"] = calculateGap(clients[key]["seqNum"])
-            clients[key]["sigGap"] = calculateGap(clients[key]["sigStr"])
-    return clients
 
 # plot graphs for every client with respect to the parameter (seqGap, RSS?)
 def plot(client, name):
     seqnum = client["seqGap"]
     signal = client["sigGap"]
-
-    seqPer = calculatePercentages(seqnum)
-    sigPer = calculatePercentages(signal)
 
     plt.subplot(2, 2, 1)
     plt.scatter([i for i in range(1, (len(seqnum)) * 100, 100)], seqnum, s=0.1)
@@ -82,17 +54,16 @@ def plot(client, name):
     plt.subplot(2, 2, 2)
     plt.scatter([i for i in range(1, (len(signal)) * 100, 100)], signal, s=0.1)
     plt.ylim((0, 70))
-    plt.yticks([i for i in range(0, 50, 70)], [i for i in range(0, 70, 10)])
+    plt.yticks([i for i in range(0, 70, 10)], [i for i in range(0, 70, 10)])
     plt.title(name+": Signal Strength")
 
-
-    x, y = zip(*seqPer)
+    x, y = zip(*client["seqPer"])
     plt.subplot(2, 2, 3)
     plt.plot(x, y)
     plt.ylim((0, 1))
     plt.title(name+": Sequence Number Percentage")
 
-    x, y = zip(*sigPer)
+    x, y = zip(*client["sigPer"])
     plt.subplot(2, 2, 4)
     plt.plot(x, y)
     plt.ylim((0, 1))
@@ -100,23 +71,36 @@ def plot(client, name):
 
     plt.show()
 
+
+# filter clients to get only ones with enough packets to matter
+def filterClients(clients):
+    newClients = {}
+    for client in clients:
+        if len(clients[client]["seqNum"])>50 and clients[client]["seqNum"][0] is not None and clients[client]["sigStr"][0] is not None:
+            newClients[client] = clients[client]
+            newClients[client]["seqGap"] = calculateGap(newClients[client]["seqNum"])
+            newClients[client]["sigGap"] = calculateGap(newClients[client]["sigStr"])
+            newClients[client]["seqPer"] = calculatePercentages(newClients[client]["seqGap"])
+            newClients[client]["sigPer"] = calculatePercentages(newClients[client]["sigGap"])
+    return newClients
+
 def spoofDetection():
     pass
 
 
 if __name__ == '__main__':
-    with open('./res/test3.json') as f:
-        jsonfile = json.load(f)
-    clients = getClients(jsonfile)
 
-    '''
-    to directly extract info from .pcap file
-    '''
-    # capfile = rdpcap('./test-03.pcapng')
-    # print(capfile[3]["RadioTap"].dBm_AntSignal)
-    # print(int(capfile[3]["802.11-FCS"].SC)/(2^4))
-    # print(capfile[3]["802.11-FCS"].addr1)
+    # if we are using json - takes 3-7 minutes
+    # with open('./res/test3.json') as f:
+    #     jsonfile = json.load(f)
+    # clients = jsP.getClients(jsonfile)
+
+    # if we are using pcap - takes 5-10 minutes
+    capfile = rdpcap('./res/test-03.pcapng')
+    clients = pcapP.getClients(capfile)
+
+    clients = filterClients(clients)
 
     for client in clients:
         plot(clients[client], client)
-        break
+        
