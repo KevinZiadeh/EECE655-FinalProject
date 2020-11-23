@@ -27,8 +27,6 @@ def listHostInterfaces():
 
     return interface_choices
 
-
-
 # Sniff packets that satisfy filters on our specific interface
 # We sniff a certain amount of packet before stopping
 def sniff_packets(interface, count, filter):
