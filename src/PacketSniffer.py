@@ -2,6 +2,7 @@ import subprocess
 from scapy.all import *
 import argparse
 import re
+import json
 
 # Enable Promiscuous Mode on a specific interface
 def enablePromiscuousMode(interface):
@@ -52,21 +53,24 @@ def resultOutput(packets):
     if len(packets) == 0:
         return
     
-    with open('packetSniffingResults.txt', 'w') as f:
-
-        f.write("All Packets:")
-
+    with open('packetSniffingResults.json', 'w') as f:
+        PacketList = []
         for i in range(len(packets)):
-            f.write("\n\n\n PACKET #" + str(i) + "\n\n")
             #f.write(packets[i].show(dump=True))
-            if packets[i].getlayer('Ethernet') is not None:
-                f.write("Source MAC Address : " + str(packets[i].getlayer('Ethernet').src) + "\n")
-            if packets[i].getlayer('TCP') is not None:
-                f.write("TCP Sequence Number : " + str(packets[i].getlayer('TCP').seq)+ "\n")
-            if packets[i].getlayer('Radiotap') is not None:
-                f.write("Signal Strength (Antenna Signal in dBm): " + str(packets[i].getlayer('Radiotap').dBm_AntSignal)+ "\n")
-    
-    print("Sniffed packets are available in packetSniffingResults.txt")
+            if packets[i].getlayer('Ethernet') is not None and packets[i].getlayer('TCP') is not None:
+                srcMACAddress = packets[i].getlayer('Ethernet').src
+                TCPsqn = packets[i].getlayer('TCP').seq
+                packetData = {}
+                if packets[i].getlayer('Radiotap') is not None:
+                    rdtap = packets[i].getlayer('Radiotap').dBm_AntSignal
+                    packetData = {'SourceMACAddress': srcMACAddress, 'TCPSequenceNumber' : TCPsqn, "SignalStrength": rdtap}
+                else:
+                    packetData = {'SourceMACAddress': srcMACAddress, 'TCPSequenceNumber' : TCPsqn}
+                PacketList.append(packetData)
+
+        results = {'Packets' : PacketList}        
+        json.dump(results, f,indent = 4, sort_keys=True)
+        print("Sniffed packets are available in packetSniffingResults.txt")
 
 
 if __name__ == "__main__":
