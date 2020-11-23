@@ -58,7 +58,10 @@ def resultOutput(packets):
 
         for i in range(len(packets)):
             f.write("\n\n\n PACKET #" + str(i) + "\n\n")
-            f.write(packets[i].show(dump=True))
+            #f.write(packets[i].show(dump=True))
+            f.write("Source MAC Address : " + str(packets[i].getlayer('Ethernet').src) + "\n")
+            f.write("TCP Sequence Number : " + str(packets[i].getlayer('TCP').seq)+ "\n")
+            #f.write("Source MAC Address : " + packets[i].src)
     
     print("Sniffed packets are available in packetSniffingResults.txt")
 
