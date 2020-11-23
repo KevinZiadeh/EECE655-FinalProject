@@ -7,25 +7,9 @@ def getSourceAddress(packet):
 # extract from packets that contain a sequence number the clients as well as the sequence number
 def getClients(capfile):
     clients = {}
-    # print("here")
-    # print("packet")
     for packet in capfile:
-        # print(packet)
-        # break
-        # if "dBm_AntSignal" in packet:
-        #     ss = packet.dBm_AntSignal
-        # else:
-        #     continue
-        # if "SC" in packet:
-        #     sn = packet.SC/(2**4)
-        # else:
-        #     continue
-        ss = packet.dBm_AntSignal
-        if not packet.SC:
-            continue
-        sn = packet.SC / (2 ** 4) # packet.getlayer("Dot11").SC
-        sa = getSourceAddress(packet)
-        if not sa:
+        (sa, sn, ss) = extractPacket(packet)
+        if not sa or not sn or ss is None:
             continue
         else:
             if sa in clients:
@@ -36,3 +20,12 @@ def getClients(capfile):
                 clients[sa]["seqNum"] = []
                 clients[sa]["sigStr"] = []
     return clients
+
+def extractPacket(packet):
+    ss = packet.dBm_AntSignal
+    if not packet.SC:
+        sn = False
+    else:
+        sn = packet.SC / (2 ** 4)  # packet.getlayer("Dot11").SC
+    sa = getSourceAddress(packet)
+    return (sa, sn, ss)
