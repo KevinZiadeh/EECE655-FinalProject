@@ -35,7 +35,7 @@ def calculatePercentages(seqList):
         else:
             seqDict[e] += 1
     for key in seqDict:
-        if seqDict[key] < 10^-2:
+        if seqDict[key] < 0.01:
             seqDict.pop(key)
         else:
             seqDict[key] = seqDict[key]/len(seqList)
@@ -48,6 +48,7 @@ def plot(client, name):
     seqnum = client["seqGap"]
     signal = client["sigGap"]
 
+    plt.figure()
     plt.subplot(2, 2, 1)
     plt.scatter([i for i in range(1, (len(seqnum)) * 100, 100)], seqnum, s=0.1)
     plt.ylim((0, 4096))
@@ -101,23 +102,26 @@ sigGap
     
 Hyperparameters (addition numbers) were selected using trial and error
 '''
+
+# calculate warning with respect to sequence number gap. Takes client, gap and the packet number entry
+def sequenceNumberWarning(client, gap, currentSN):
+    if gap > 0 or gap < 4:
+        return -1
+    elif gap == 0 or gap > 4093:  # duplicate
+        previous1SN = client["seqNum"][(i) % 4096]
+        previous2SN = client["seqNum"][(i - 1) % 4096]
+        previous3SN = client["seqNum"][(i - 2) % 4096]
+        previous4SN = client["seqNum"][(i - 3) % 4096]
+        if currentSN != previous1SN and currentSN != previous2SN and currentSN != previous3SN and currentSN != previous4SN:
+            return 10
+    else:
+        return 10
+
 def initialWarning(clients):
     for key in clients:
         c = 0
         for i in range(len(clients[key]["seqGap"])):
-            gap = clients[key]["seqGap"][i]
-            currentSN = clients[key]["seqNum"][(i+1)%4096]
-            if gap > 0 or gap < 4:
-                clients[key]["warning"] -= 1
-            elif gap == 0 or gap > 4093: # duplicate
-                previous1SN = clients[key]["seqNum"][(i)%4096]
-                previous2SN = clients[key]["seqNum"][(i-1)%4096]
-                previous3SN = clients[key]["seqNum"][(i-2)%4096]
-                previous4SN = clients[key]["seqNum"][(i-3)%4096]
-                if currentSN != previous1SN and currentSN != previous2SN and currentSN != previous3SN and currentSN != previous4SN:
-                    clients[key]["warning"] += 10
-            else:
-                clients[key]["warning"] += 10
+            clients[key]["warning"] += sequenceNumberWarning(clients[key], clients[key]["seqGap"][i], clients[key]["seqNum"][(i+1)%4096])
 
         for i in range(len(clients[key]["sigGap"])):
             gap = clients[key]["sigGap"][i]
@@ -127,8 +131,39 @@ def initialWarning(clients):
                 clients[key]["warning"] -= 1
 
 
-def spoofDetection(client, packet):
-    pass
+def spoofDetection(clients, packet):
+    (sa, sn, ss) = pcapP.extractPacket(packet)
+    # update client
+    if not sa or not sn or ss is None:
+        return
+    else:
+        # compute missing parameters
+        if sn < 4093:
+            seqgap = abs(sn - clients[sa]["seqNum"][-1])
+        else:
+            seqgap = abs(-(4096 - (sn - clients[sa]["seqNum"][-1])))
+        siggap = abs(ss - clients[sa]["sigStr"][-1])
+        # populating client
+        if sa in clients:
+            clients[sa]["seqNum"].append(sn)
+            clients[sa]["sigStr"].append(ss)
+            clients[sa]["seqGap"].append(seqgap)
+            clients[sa]["sigGap"].append(siggap)
+            clients[sa]["seqPer"] = calculatePercentages(clients[sa]["seqGap"])
+            clients[sa]["sigPer"] = calculatePercentages(clients[sa]["sigGap"])
+            clients[sa]["warning"] += sequenceNumberWarning(clients[sa], seqgap, sn)
+            clients[sa]["warning"] = (clients[sa]["warning"]+10) if siggap > 5 else (clients[sa]["warning"]-1)
+            if clients[sa]["warning"] / len(clients[sa]["seqNum"]) > 0.1:
+                print(sa + "might be a spoofed mac address")
+                decision = input("Plot figure? (y yes, n no)").lower()
+                if decision == "y":
+                    plot(client, sa)
+        else:
+            clients[sa] = {}
+            clients[sa]["seqNum"] = [sn]
+            clients[sa]["sigStr"] = [ss]
+            clients[sa]["seqGap"] = []
+            clients[sa]["sigGap"] = []
 
 
 if __name__ == '__main__':
@@ -148,7 +183,7 @@ if __name__ == '__main__':
     for client in clients:
         print(clients[client]["warning"]/len(clients[client]["seqNum"]))
         '''
-        Above 0.5 will be flagged
+        Above 0.1 will be flagged
         Output was : 
         -1.8831740910782975
         0.06343258159024323
@@ -159,6 +194,8 @@ if __name__ == '__main__':
         -1.3796844181459567
         -1.7876106194690264
         -0.7375
+        Mean: -1.396542800863
+        Standard Deviation: 0.7062525106267
         '''
     # for client in clients:
     #     plot(clients[client], client)
