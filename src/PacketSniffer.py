@@ -2,7 +2,6 @@ import subprocess
 from scapy.all import *
 import argparse
 import re
-import json
 
 # Enable Promiscuous Mode on a specific interface
 def enablePromiscuousMode(interface):
@@ -28,24 +27,17 @@ def listHostInterfaces():
 
     return interface_choices
 
-# Sniff packets that satisfy filters on our specific interface
-# We sniff a certain amount of packet before stopping
-def sniff_packets(interface, count, filter):
-    print("Sniffing", count, "packets on interface", interface,"...\n")
-    packets = sniff(iface=interface, count=count, filter=filter, monitor=True)
-
-    #Print out the summary of all the packets sniffed, and return them
-    packets.nsummary()
-    return packets
 
 # Sniff packets that satisfy filters on our specific interface
 # We wait for user input before stopping packet sniffing
-def persistent_packet_sniffing(interface, filter):
-    print("Sniffing packets on interface", interface,", press any key to stop...\n")
-    packets = sniff(iface=interface, filter=filter, monitor=True)
+def persistent_packet_sniffing(interface):
+    print("Sniffing packets on interface", interface,", press Ctrl+C to stop...\n")
+    
+    packets = sniff(iface=interface,  monitor=True)
+    
 
     # Print out the summary of all the packets sniffed, and return them
-    packets.nsummary()
+    #packets.nsummary()
     return packets
 
 # Output Packet Sniffing results to an output file 'packetSniffingResults.txt'
@@ -53,24 +45,19 @@ def resultOutput(packets):
     if len(packets) == 0:
         return
     
-    with open('packetSniffingResults.json', 'w') as f:
-        PacketList = []
+    
+    with open('SniffedPackets.txt', 'w') as f:
         for i in range(len(packets)):
             #f.write(packets[i].show(dump=True))
-            if packets[i].getlayer('Ethernet') is not None and packets[i].getlayer('TCP') is not None:
-                srcMACAddress = packets[i].getlayer('Ethernet').src
-                TCPsqn = packets[i].getlayer('TCP').seq
-                packetData = {}
-                if packets[i].getlayer('Radiotap') is not None:
-                    rdtap = packets[i].getlayer('Radiotap').dBm_AntSignal
-                    packetData = {'SourceMACAddress': srcMACAddress, 'TCPSequenceNumber' : TCPsqn, "SignalStrength": rdtap}
-                else:
-                    packetData = {'SourceMACAddress': srcMACAddress, 'TCPSequenceNumber' : TCPsqn}
-                PacketList.append(packetData)
+            srcMACAddress = packets[i].addr2 if packets[i].addr2 is not None else None
+            sc = packets[i].SC//2**4 if packets[i].SC is not None else None
+            rdtap = packets[i].getlayer('Radiotap').dBm_AntSignal
+            if srcMACAddress is not None and sc is not None and rdtap is not None:
+                packetData = str(srcMACAddress) + " " + str(sc) + " " + str(rdtap) + "\n"
+                f.write(packetData)
 
-        results = {'Packets' : PacketList}        
-        json.dump(results, f,indent = 4, sort_keys=True)
         print("Sniffed packets are available in packetSniffingResults.txt")
+        f.close()
 
 
 if __name__ == "__main__":
@@ -81,27 +68,16 @@ if __name__ == "__main__":
     # Parse arguments passed to the Python script
     parser = argparse.ArgumentParser()
     parser.add_argument("interface", choices=interface_choices, help="Interface name")
-    parser.add_argument("-c", "--count", type=int, default=100, help="Packet count")
-    parser.add_argument("-f", "--filter", default='', help="Packet filter")
-    parser.add_argument("-p", "--persistent", action="store_true", help="Enable persistent packet sniffing")
-    parser.add_argument("-o", "--output", action="store_true", help="Write packet sniffing results to file")
     args = parser.parse_args()
 
     # Enable Promiscuous mode
     enablePromiscuousMode(args.interface)
 
-    # If script was launched with flag '-p' or '--persistent'
     # Enable persistent packet sniffing
     # Else, sniff a specific amount of packets
-    if args.persistent:
-        packets = persistent_packet_sniffing(interface=args.interface, filter=args.filter)
-    else:
-        packets = sniff_packets(interface=args.interface, count=args.count, filter=args.filter)
+    packets = persistent_packet_sniffing(interface=args.interface)
 
-    # If script was launched with flag '-o' or '--output'
-    # Print packet sniffing results to output file
-    if args.output:
-        resultOutput(packets)
+    resultOutput(packets)
     
     # Disable Promiscuous mode
     disablePromiscuousMode(args.interface)
