@@ -22,7 +22,12 @@ def spoofDetection(packet):
         settings.clients[sa]["sigPer"] = calculatePercentages(settings.clients[sa]["sigGap"])
         settings.clients[sa]["warning"] += sequenceNumberWarning(settings.clients[sa], seqgap, sn, len(settings.clients[sa]["seqNum"])-1)
         settings.clients[sa]["warning"] = (settings.clients[sa]["warning"]+10) if siggap > 5 else (settings.clients[sa]["warning"]-1)
-        if settings.clients[sa]["warning"] / len(settings.clients[sa]["seqNum"]) > 0.1:
+        if settings.clients[sa]["warning"] / len(settings.clients[sa]["seqNum"]) > -0.2:
+            print(sa + "is most definetely a spoofed mac address")
+            decision = input("Plot figure? (y yes, n no)").lower()
+            if decision == "y":
+                plot(settings.clients[sa], sa)
+        elif settings.clients[sa]["warning"] / len(settings.clients[sa]["seqNum"]) > -1:
             print(sa + "might be a spoofed mac address")
             decision = input("Plot figure? (y yes, n no)").lower()
             if decision == "y":

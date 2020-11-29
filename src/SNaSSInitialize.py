@@ -1,8 +1,6 @@
 from scapy.all import *
 
 from src.packets import txtPacket as txtP
-# from settings import clients as clients
-# from settings import *
 import settings
 '''
 Used wireshark with NIC in monitor mode to get pcapng file. Make sure decryption of IEEE 802.11 is enabled and working
@@ -53,24 +51,26 @@ def plot(client, name):
     plt.scatter([i for i in range(1, (len(seqnum)) * 100, 100)], seqnum, s=0.1)
     plt.ylim((0, 4096))
     plt.yticks([i for i in range(0, 4096, 500)], [i for i in range(0, 4096, 500)])
-    plt.title(name + ": Sequence Number")
+    plt.title(name + ": Sequence Number Gap")
 
     plt.subplot(2, 2, 2)
     plt.scatter([i for i in range(1, (len(signal)) * 100, 100)], signal, s=0.1)
     plt.ylim((0, 70))
     plt.yticks([i for i in range(0, 70, 10)], [i for i in range(0, 70, 10)])
-    plt.title(name + ": Signal Strength")
+    plt.title(name + ": Signal Strength Gap")
 
     x, y = zip(*client["seqPer"])
     plt.subplot(2, 2, 3)
     plt.plot(x, y)
     plt.ylim((0, 1))
+    plt.xlim((0, 9))
     plt.title(name + ": Sequence Number Percentage")
 
     x, y = zip(*client["sigPer"])
     plt.subplot(2, 2, 4)
     plt.plot(x, y)
     plt.ylim((0, 1))
+    plt.xlim((0, 9))
     plt.title(name + ": Signal Strength Percentage")
 
     plt.show()
@@ -142,9 +142,10 @@ def initialize():
     # capfile = rdpcap('./res/test-03.pcapng')
     # clients = pcapP.getClients(capfile)
 
-    packets = open('src/packets/SniffedPackets.txt', "r")
+    # packets = open('src/packets/SniffedPackets.txt', "r")
+    packets = open('packets/SniffedPacketsSpoofed.txt', "r")
+    # packets = open('packets/SniffedPackets.txt', "r")
     settings.clients = txtP.getClients(packets)
-
     settings.clients = filterClients()
 
     initialWarning()
@@ -152,20 +153,22 @@ def initialize():
     return settings.clients
     # for client in settings.clients:
     #     print(settings.clients[client]["warning"]/len(settings.clients[client]["seqNum"]))
+    #     plot(settings.clients[client], client)
+    #     break
     '''
-    Above 0.1 will be flagged
+    Above -1 will be flagged as might
+    Above -0.2 is most definetely 
     Output was : 
     -1.8831740910782975
-    0.06343258159024323
     -1.0209580838323353
     -1.898404367487523
     -1.9839253056117048
     -1.9410609037328095
     -1.3796844181459567
     -1.7876106194690264
-    -0.7375
-    Mean: -1.396542800863
-    Standard Deviation: 0.7062525106267
+    -1.6682690063938022
+    Mean: -1.69539
+    Standard Deviation: 0.33463
     '''
     # for client in settings.clients:
     #     plot(settings.clients[client], client)
