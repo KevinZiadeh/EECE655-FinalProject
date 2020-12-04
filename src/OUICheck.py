@@ -10,5 +10,5 @@ args = parser.parse_args()
 def get_info(mac_address):
 	return requests.get("https://macvendors.co/api/vendorname/"+mac_address+"/").text
 
-jsonResult = get_info(args.MAC_Address.upper())
-print(jsonResult)
+vendorName = get_info(args.MAC_Address.upper())
+print(vendorName)
