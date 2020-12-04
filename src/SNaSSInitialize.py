@@ -49,14 +49,14 @@ def plot(client, name):
 
     plt.figure()
     plt.subplot(2, 2, 1)
-    plt.scatter([i for i in range(1, (len(seqnum)) * 100, 100)], seqnum, s=0.1)
-    plt.ylim((0, 4096))
+    plt.scatter([i for i in range(1, (len(seqnum)) * 100, 100)], seqnum, s=0.15)
+    plt.ylim((-5, 4096))
     plt.yticks([i for i in range(0, 4096, 500)], [i for i in range(0, 4096, 500)])
     plt.title(name + ": Sequence Number Gap")
 
     plt.subplot(2, 2, 2)
-    plt.scatter([i for i in range(1, (len(signal)) * 100, 100)], signal, s=0.1)
-    plt.ylim((0, 70))
+    plt.scatter([i for i in range(1, (len(signal)) * 100, 100)], signal, s=0.15)
+    plt.ylim((-5, 70))
     plt.yticks([i for i in range(0, 70, 10)], [i for i in range(0, 70, 10)])
     plt.title(name + ": Signal Strength Gap")
 
@@ -143,9 +143,9 @@ def initialize():
     # capfile = rdpcap('./res/test-03.pcapng')
     # clients = pcapP.getClients(capfile)
 
-    # packets = open('src/packets/SniffedPackets.txt', "r")
+    packets = open('src/packets/SniffedPackets.txt', "r")
     # packets = open('packets/SniffedPacketsSpoofed.txt', "r")
-    packets = open('packets/SniffedPackets.txt', "r")
+    # packets = open('packets/SniffedPackets.txt', "r")
     settings.clients = txtP.getClients(packets)
     settings.clients = filterClients()
 
@@ -153,9 +153,9 @@ def initialize():
 
     # return settings.clients
     for client in settings.clients:
-        # print(settings.clients[client]["warning"]/len(settings.clients[client]["seqNum"]))
+        print(settings.clients[client]["warning"])
         plot(settings.clients[client], client)
-        # break
+        break
     '''
     Above -1 will be flagged as might
     Above -0.2 is most definetely 
