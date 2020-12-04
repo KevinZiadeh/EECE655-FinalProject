@@ -171,5 +171,3 @@ def initialize():
     Mean: -1.69539
     Standard Deviation: 0.33463
     '''
-
-initialize()
