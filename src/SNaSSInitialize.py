@@ -2,6 +2,7 @@ from scapy.all import *
 
 from src.packets import txtPacket as txtP
 import settings
+from matplotlib import pyplot as plt
 '''
 Used wireshark with NIC in monitor mode to get pcapng file. Make sure decryption of IEEE 802.11 is enabled and working
 Used wireshark extract as json to get json file
@@ -80,7 +81,7 @@ def plot(client, name):
 def filterClients():
     newClients = {}
     for client in settings.clients:
-        if len(settings.clients[client]["seqNum"]) > 10 and settings.clients[client]["seqNum"][0] is not None and \
+        if len(settings.clients[client]["seqNum"]) > 100 and settings.clients[client]["seqNum"][0] is not None and \
                 settings.clients[client]["sigStr"][0] is not None:
             newClients[client] = settings.clients[client]
             newClients[client]["seqGap"] = calculateGap(newClients[client]["seqNum"])
@@ -120,7 +121,6 @@ def sequenceNumberWarning(client, gap, currentSN, i):
 
 def initialWarning():
     for key in settings.clients:
-        c = 0
         for i in range(len(settings.clients[key]["seqGap"])):
             settings.clients[key]["warning"] += sequenceNumberWarning(settings.clients[key], settings.clients[key]["seqGap"][i],
                                                              settings.clients[key]["seqNum"][(i + 1) % 4096], i)
@@ -131,6 +131,7 @@ def initialWarning():
                 settings.clients[key]["warning"] += 10
             else:
                 settings.clients[key]["warning"] -= 1
+        settings.clients[key]["warning"] = settings.clients[key]["warning"]/len(settings.clients[key]["seqNum"])
 
 def initialize():
     # if we are using json - takes 3-7 minutes
@@ -143,18 +144,18 @@ def initialize():
     # clients = pcapP.getClients(capfile)
 
     # packets = open('src/packets/SniffedPackets.txt', "r")
-    packets = open('packets/SniffedPacketsSpoofed.txt', "r")
-    # packets = open('packets/SniffedPackets.txt', "r")
+    # packets = open('packets/SniffedPacketsSpoofed.txt', "r")
+    packets = open('packets/SniffedPackets.txt', "r")
     settings.clients = txtP.getClients(packets)
     settings.clients = filterClients()
 
     initialWarning()
 
-    return settings.clients
-    # for client in settings.clients:
-    #     print(settings.clients[client]["warning"]/len(settings.clients[client]["seqNum"]))
-    #     plot(settings.clients[client], client)
-    #     break
+    # return settings.clients
+    for client in settings.clients:
+        # print(settings.clients[client]["warning"]/len(settings.clients[client]["seqNum"]))
+        plot(settings.clients[client], client)
+        # break
     '''
     Above -1 will be flagged as might
     Above -0.2 is most definetely 
@@ -170,5 +171,5 @@ def initialize():
     Mean: -1.69539
     Standard Deviation: 0.33463
     '''
-    # for client in settings.clients:
-    #     plot(settings.clients[client], client)
+
+initialize()
