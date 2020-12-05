@@ -1,5 +1,6 @@
 from scapy.all import ARP, Ether, srp
 import argparse
+import requests
 
 def getWhiteList():
     whitelistFile = open("whitelist.txt", "r")
@@ -31,16 +32,19 @@ args = parser.parse_args()
 
 IPResults, MACResults = scanSubnet(args.subnet)
 
+
 vendorWhitelist = getWhiteList()
 
-import requests
 trackValue = 0
 for MACAddress in MACResults :
     vendorName = get_info(MACAddress)
+
     if vendorName == "No vendor" :
         print(str(IPResults[trackValue])+"/"+str(MACResults[trackValue])+" is not registered with any vendor. It is invalid & probably spoofed \n")
+    
     elif (vendorName not in vendorWhitelist) :
         print(str(IPResults[trackValue])+"/"+str(MACResults[trackValue])+" is "+ vendorName+ " which is not in our vendor whitelist. It is probably spoofed \n")
+    
     else:
         print("Vendor for "+str(IPResults[trackValue])+"/"+str(MACResults[trackValue])+" is "+vendorName+"\n")
     trackValue += 1
