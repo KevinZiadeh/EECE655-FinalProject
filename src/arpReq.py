@@ -1,35 +1,42 @@
 import scapy.all as scapy
 import sys
 
-def arpCheck(incomingIP, incomingMAC):
+def getReferenceMACandIPs():
+    fl = open("packets/IPandMAC.txt", "r")
+    IPs = []
+    MACs = []
+    for line in fl:
+        stripped_line = line.strip()
+        strippedList = line.split(' ')
+        IPs.append(strippedList[0])
+        MACs.append(strippedList[1])
+    return IPs, MACs
 
+def arpCheck(incomingIP):
     #pinging the the IP we want to check
-    icmp = scapy.IP(dst=incomingIP)/scapy.ICMP()
+    refIP, refMAC = getReferenceMACandIPs()
+    print(refIP)
+    print(refMAC)
     request = scapy.ARP()
-    resp = scapy.sr1(icmp,timeout=1)
-    if resp != None:
-        request.pdst = incomingIP
-        broadcast = scapy.Ether()
+    request.pdst = incomingIP
+    broadcast = scapy.Ether()
 
-        broadcast.dst = 'ff:ff:ff:ff:ff:ff'
+    broadcast.dst = 'ff:ff:ff:ff:ff:ff'
 
-        request_broadcast = broadcast / request
-        clients = scapy.srp(request_broadcast, timeout = 1)[0]
+    request_broadcast = broadcast / request
+    clients = scapy.srp(request_broadcast, timeout = 1)[0]
 
-        # for element in clients:
-            # print(element[1].psrc + "      " + element[1].hwsrc)
+    # for element in clients:
+        # print(element[1].psrc + "      " + element[1].hwsrc)
 
-        for element in clients:
-            print(incomingMAC)
-            print(element[1].hwsrc)
-            if(element[1].psrc == incomingIP and element[1].hwsrc == incomingMAC):
-                # print("IP: " + incomingIP + " with MAC: " + incomingMAC + " is not spoofed.")
-                return True
+    for element in clients:
+        if element[1].psrc in refIP:
+            index = refIP.index(element[1].psrc)
+            if(element[1].hwsrc == refMAC[index]):
+                print("IP "+element[1].psrc +" has reference MAC "+refMAC[index]+"\n")
             else:
-                # print("IP: " + incomingIP + " with MAC: " + incomingMAC + " is spoofed.")
-                return False
-    #else:  
-    #    print("Host is Down, not going to check ARP")
+                print("IP "+element[1].psrc +" has MAC "+element[1].hwsrc+" which is different from ref MAC "+refMAC[index]+"\n")
+#else:  
+#    print("Host is Down, not going to check ARP")
 
-
-print(arpCheck('192.168.1.14', '22:86:98:39:90:39'))
+arpCheck('192.168.1.1/24')
