@@ -8,9 +8,6 @@ def arpCheck(incomingIP, incomingMAC):
     request = scapy.ARP()
     resp = scapy.sr1(icmp,timeout=1)
     if resp != None:
-        #print("This host is Up")
-        
-
         request.pdst = incomingIP
         broadcast = scapy.Ether()
 
@@ -23,6 +20,8 @@ def arpCheck(incomingIP, incomingMAC):
             # print(element[1].psrc + "      " + element[1].hwsrc)
 
         for element in clients:
+            print(incomingMAC)
+            print(element[1].hwsrc)
             if(element[1].psrc == incomingIP and element[1].hwsrc == incomingMAC):
                 # print("IP: " + incomingIP + " with MAC: " + incomingMAC + " is not spoofed.")
                 return True
@@ -33,4 +32,4 @@ def arpCheck(incomingIP, incomingMAC):
     #    print("Host is Down, not going to check ARP")
 
 
-print(arpCheck('192.168.1.8', '10:e9:53:42:1e:de'))
+print(arpCheck('192.168.1.14', '22:86:98:39:90:39'))
