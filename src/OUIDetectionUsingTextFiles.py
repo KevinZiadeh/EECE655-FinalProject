@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import math
 
 def getWhiteList():
-    whitelistFile = open("whitelist.txt", "r")
+    whitelistFile = open("src/whitelist.txt", "r")
     whitelistElements = []
     for line in whitelistFile:
         stripped_line = line.strip()
@@ -29,6 +29,7 @@ def getVendor(MACResults):
 
     vendorWhitelist = getWhiteList()
     VendorList = []
+    index = -1
 
     for MACAddress in MACResults :
         vendorName = get_info(MACAddress)
@@ -36,10 +37,12 @@ def getVendor(MACResults):
 
         if vendorName == "No vendor" :
             print(str(MACAddress)+" : No vendor \n")
+            index = MACResults.index(MACAddress)
             
         
         elif (vendorName not in vendorWhitelist) :
             print(str(MACAddress)+": Not in whitelist, vendor "+ vendorName+ "\n")
+            index = MACResults.index(MACAddress)
         
         else:
             print(str(MACAddress)+" : In Whitelist, vendor "+ vendorName+ " \n")
@@ -55,7 +58,7 @@ def getVendor(MACResults):
     qtyOfDevices[1],qtyOfDevices[3] = qtyOfDevices[3],qtyOfDevices[1]
     sortedVendorList[1],sortedVendorList[3] = sortedVendorList[3],sortedVendorList[1]
 
-    return sortedVendorList,qtyOfDevices
+    return sortedVendorList,qtyOfDevices, index
 
 def getVendorBarPlot(MACResults):
 
@@ -99,7 +102,7 @@ def doGraphPlot(x,y, val):
 
     plt.show()
 
-def doTablePlot(x,y, title):
+def doTablePlot(x,y, title, val):
     val1 = ["MAC Address", "Associated Vendor"] 
     val2 = [("Host #"+ str(i+1)) for i in range(5)]
     listofLists = []
@@ -114,7 +117,13 @@ def doTablePlot(x,y, title):
 
     rcolors = plt.cm.BuPu(np.full(5, 0.1))
     ccolors = plt.cm.BuPu(np.full(2, 0.1))
-    elementColors = [["#90EE90","#90EE90"],["#ff4040","#ff4040"], ["#90EE90","#90EE90"], ["#90EE90","#90EE90"], ["#90EE90","#90EE90"]]
+
+    elementColors = []
+    for index in range(5):
+        if val == index:
+            elementColors.append(["#ff4040","#ff4040"])
+        else:
+            elementColors.append(["#90EE90","#90EE90"])
 
     table = ax.table( 
         cellText = val3,  
@@ -130,21 +139,21 @@ def doTablePlot(x,y, title):
     ax.set_axis_off() 
     plt.show() 
 
+def executeSimulation() :
+    MACResults1 = scanPacketFile('src/packets/SniffedPacketsForOUI.txt')
+    x,y, index = getVendor(MACResults1)
+    #doGraphPlot(x,y,1)
+    vendorsList = getVendorBarPlot(MACResults1)
+    doTablePlot(MACResults1,vendorsList,'Reference / No Spoofing', index)
 
-MACResults1 = scanPacketFile('packets/SniffedPacketsForOUI.txt')
-x,y = getVendor(MACResults1)
-doGraphPlot(x,y,1)
-vendorsList = getVendorBarPlot(MACResults1)
-doTablePlot(MACResults1,vendorsList,'Reference / No Spoofing')
+    MACResults2 = scanPacketFile('src/packets/SniffedPacketsSpoofed1ForOUI.txt')
+    x,y, index= getVendor(MACResults2)
+    #doGraphPlot(x,y,1)
+    vendorsList = getVendorBarPlot(MACResults2)
+    doTablePlot(MACResults2,vendorsList,'MAC Spoofing / Non-valid MAC Address', index)
 
-MACResults2 = scanPacketFile('packets/SniffedPacketsSpoofed1ForOUI.txt')
-x,y = getVendor(MACResults2)
-doGraphPlot(x,y,1)
-vendorsList = getVendorBarPlot(MACResults2)
-doTablePlot(MACResults2,vendorsList,'MAC Spoofing / Non-valid MAC Address')
-
-MACResults3 = scanPacketFile('packets/SniffedPacketsSpoofed2ForOUI.txt')
-x,y = getVendor(MACResults3)
-doGraphPlot(x,y,1)
-vendorsList = getVendorBarPlot(MACResults3)
-doTablePlot(MACResults3,vendorsList,'MAC Spoofing / Valid MAC Address & Non-Whitelisted')
+    MACResults3 = scanPacketFile('src/packets/SniffedPacketsSpoofed2ForOUI.txt')
+    x,y,index= getVendor(MACResults3)
+    #doGraphPlot(x,y,1)
+    vendorsList = getVendorBarPlot(MACResults3)
+    doTablePlot(MACResults3,vendorsList,'MAC Spoofing / Valid MAC Address & Non-Whitelisted', index)
