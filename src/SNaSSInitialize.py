@@ -133,7 +133,7 @@ def initialWarning():
                 settings.clients[key]["warning"] -= 1
         settings.clients[key]["warning"] = settings.clients[key]["warning"]/len(settings.clients[key]["seqNum"])
 
-def initialize():
+def initialize(file='src/packets/SniffedPackets.txt'): #default sniffed packets file
     # if we are using json - takes 3-7 minutes
     # with open('./res/test3.json') as f:
     #     jsonfile = json.load(f)
@@ -143,7 +143,8 @@ def initialize():
     # capfile = rdpcap('./res/test-03.pcapng')
     # clients = pcapP.getClients(capfile)
 
-    packets = open('src/packets/SniffedPackets.txt', "r")
+    packets = open(file, "r")
+    # packets = open('src/packets/SniffedPackets.txt', "r")
     # packets = open('packets/SniffedPacketsSpoofed.txt', "r")
     # packets = open('packets/SniffedPackets.txt', "r")
     settings.clients = txtP.getClients(packets)
@@ -152,10 +153,10 @@ def initialize():
     initialWarning()
 
     # return settings.clients
-    for client in settings.clients:
-        print(settings.clients[client]["warning"])
-        plot(settings.clients[client], client)
-        break
+    # for client in settings.clients:
+    #     print(settings.clients[client]["warning"])
+    #     plot(settings.clients[client], client)
+    #     break
     '''
     Above -1 will be flagged as might
     Above -0.2 is most definetely 
