@@ -1,5 +1,5 @@
 # MAC Spoofing Detection
-> University Project (EECE 655 - Internet Security @ AUB) where we had to go through almost the complete research process: problem identification, literature review and problem definition, design, implementation, testing/simulation, analysis and documentation. We decided to tackle MAC spoofing detection by combinining 3 different methods.
+> University Project (EECE 655 - Internet Security @ AUB) where we had to go through almost the complete research process: problem identification, literature review and problem definition, design, implementation, testing/simulation, analysis and documentation. We decided to tackle MAC spoofing detection by combinining 4 different methods.
 
 ## What is MAC Spoofing
 A MAC address is unique and hard coded on a device’s NIC,
